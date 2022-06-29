@@ -25,6 +25,7 @@ void setup() {
   if( tfmP.sendCommand( SOFT_RESET, 0))
   {
     Serial.print( "passed.\r\n");
+    
   }
   else tfmP.printReply();
 
