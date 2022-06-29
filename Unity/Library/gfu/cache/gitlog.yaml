@@ -1,0 +1,246 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &1
+MonoBehaviour:
+  m_ObjectHideFlags: 61
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: -530159753, guid: 68c7e4565cde54155bb78d8e935f1ddb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  cacheType: 3
+  lastUpdatedAtString: 2022-06-29T12:26:58.528+09:00
+  initializedAtString: 2022-06-29T12:13:22.133+09:00
+  log:
+  - commitID: 6b86343ff1d898e74a2ed54e5fe7eebccd48ce04
+    mergeA: 
+    mergeB: 
+    authorName: SparrawBecomePigeon
+    authorEmail: 105587238+SparrawBecomePigeon@users.noreply.github.com
+    commitEmail: noreply@github.com
+    commitName: GitHub
+    summary: Create .gitignore
+    description: 
+    timeString: 2022-06-29T12:24:44.000+09:00
+    commitTimeString: 2022-06-29T12:24:44.000+09:00
+    changes:
+    - path: .gitignore
+      fullPath: "C:\\Users\\DTNLab1\\OneDrive\\\uBC14\uD0D5 \uD654\uBA74\\3D_modeling\\.gitignore"
+      projectPath: ..\.gitignore
+      originalPath: 
+      indexStatus: 4
+      workTreeStatus: 0
+  - commitID: 9567d6d9a349047002106a56f67935146efc9eeb
+    mergeA: cc20450056c82a0ea1e2d6e5670c0506d6a7b40b
+    mergeB: 54f957937aaa2ad5b4334043986227c75b6ed9c5
+    authorName: SparrawBecomePigeon
+    authorEmail: 105587238+SparrawBecomePigeon@users.noreply.github.com
+    commitEmail: noreply@github.com
+    commitName: GitHub
+    summary: Merge pull request #1 from SparrawBecomePigeon/hojin
+    description: a
+    timeString: 2022-06-29T11:50:49.000+09:00
+    commitTimeString: 2022-06-29T11:50:49.000+09:00
+    changes: []
+  - commitID: 54f957937aaa2ad5b4334043986227c75b6ed9c5
+    mergeA: 
+    mergeB: 
+    authorName: SparrawBecomePigeon
+    authorEmail: tiger981228@pusan.ac.kr
+    commitEmail: tiger981228@pusan.ac.kr
+    commitName: SparrawBecomePigeon
+    summary: a
+    description: 
+    timeString: 2022-06-29T11:50:32.000+09:00
+    commitTimeString: 2022-06-29T11:50:32.000+09:00
+    changes:
+    - path: Arduino\lidar\lidar.ino
+      fullPath: "C:\\Users\\DTNLab1\\OneDrive\\\uBC14\uD0D5 \uD654\uBA74\\3D_modeling\\Arduino\\lidar\\lidar.ino"
+      projectPath: ..\Arduino\lidar\lidar.ino
+      originalPath: Arduino\lidar.ino
+      indexStatus: 6
+      workTreeStatus: 0
+    - path: Arduino\step\step.ino
+      fullPath: "C:\\Users\\DTNLab1\\OneDrive\\\uBC14\uD0D5 \uD654\uBA74\\3D_modeling\\Arduino\\step\\step.ino"
+      projectPath: ..\Arduino\step\step.ino
+      originalPath: Arduino\step.ino
+      indexStatus: 6
+      workTreeStatus: 0
+  - commitID: cc20450056c82a0ea1e2d6e5670c0506d6a7b40b
+    mergeA: 
+    mergeB: 
+    authorName: SparrawBecomePigeon
+    authorEmail: 105587238+SparrawBecomePigeon@users.noreply.github.com
+    commitEmail: noreply@github.com
+    commitName: GitHub
+    summary: Add files via upload
+    description: 
+    timeString: 2022-06-29T11:31:48.000+09:00
+    commitTimeString: 2022-06-29T11:31:48.000+09:00
+    changes:
+    - path: Arduino\lidar.ino
+      fullPath: "C:\\Users\\DTNLab1\\OneDrive\\\uBC14\uD0D5 \uD654\uBA74\\3D_modeling\\Arduino\\lidar.ino"
+      projectPath: ..\Arduino\lidar.ino
+      originalPath: 
+      indexStatus: 4
+      workTreeStatus: 0
+    - path: Arduino\step.ino
+      fullPath: "C:\\Users\\DTNLab1\\OneDrive\\\uBC14\uD0D5 \uD654\uBA74\\3D_modeling\\Arduino\\step.ino"
+      projectPath: ..\Arduino\step.ino
+      originalPath: 
+      indexStatus: 4
+      workTreeStatus: 0
+  - commitID: 710769770fd1562c227560a6927e078e2513eaad
+    mergeA: 
+    mergeB: 
+    authorName: SparrawBecomePigeon
+    authorEmail: 105587238+SparrawBecomePigeon@users.noreply.github.com
+    commitEmail: noreply@github.com
+    commitName: GitHub
+    summary: Delete Arduino
+    description: 
+    timeString: 2022-06-29T11:30:58.000+09:00
+    commitTimeString: 2022-06-29T11:30:58.000+09:00
+    changes:
+    - path: Arduino
+      fullPath: "C:\\Users\\DTNLab1\\OneDrive\\\uBC14\uD0D5 \uD654\uBA74\\3D_modeling\\Arduino"
+      projectPath: ..\Arduino
+      originalPath: 
+      indexStatus: 5
+      workTreeStatus: 0
+  - commitID: f7841fe33b3d3679d68e3f0b6122db93c0ade304
+    mergeA: 
+    mergeB: 
+    authorName: SparrawBecomePigeon
+    authorEmail: 105587238+SparrawBecomePigeon@users.noreply.github.com
+    commitEmail: noreply@github.com
+    commitName: GitHub
+    summary: Create Arduino
+    description: 
+    timeString: 2022-06-29T11:30:48.000+09:00
+    commitTimeString: 2022-06-29T11:30:48.000+09:00
+    changes:
+    - path: Arduino
+      fullPath: "C:\\Users\\DTNLab1\\OneDrive\\\uBC14\uD0D5 \uD654\uBA74\\3D_modeling\\Arduino"
+      projectPath: ..\Arduino
+      originalPath: 
+      indexStatus: 4
+      workTreeStatus: 0
+  - commitID: e7deea7e0999bea937cdf0960bdd2e600ee4c4b7
+    mergeA: 
+    mergeB: 
+    authorName: SparrawBecomePigeon
+    authorEmail: 105587238+SparrawBecomePigeon@users.noreply.github.com
+    commitEmail: noreply@github.com
+    commitName: GitHub
+    summary: Delete arduino
+    description: 
+    timeString: 2022-06-29T11:30:13.000+09:00
+    commitTimeString: 2022-06-29T11:30:13.000+09:00
+    changes:
+    - path: arduino
+      fullPath: "C:\\Users\\DTNLab1\\OneDrive\\\uBC14\uD0D5 \uD654\uBA74\\3D_modeling\\arduino"
+      projectPath: ..\arduino
+      originalPath: 
+      indexStatus: 5
+      workTreeStatus: 0
+  - commitID: 7b1ddd46729599ae5ff24e8a1456c09a4a57baa8
+    mergeA: 
+    mergeB: 
+    authorName: SparrawBecomePigeon
+    authorEmail: 105587238+SparrawBecomePigeon@users.noreply.github.com
+    commitEmail: noreply@github.com
+    commitName: GitHub
+    summary: Create arduino
+    description: 
+    timeString: 2022-06-29T11:30:00.000+09:00
+    commitTimeString: 2022-06-29T11:30:00.000+09:00
+    changes:
+    - path: arduino
+      fullPath: "C:\\Users\\DTNLab1\\OneDrive\\\uBC14\uD0D5 \uD654\uBA74\\3D_modeling\\arduino"
+      projectPath: ..\arduino
+      originalPath: 
+      indexStatus: 4
+      workTreeStatus: 0
+  - commitID: 66151febd94760a16aa0d6fb21ae2c12cc13ee24
+    mergeA: 
+    mergeB: 
+    authorName: SparrawBecomePigeon
+    authorEmail: 105587238+SparrawBecomePigeon@users.noreply.github.com
+    commitEmail: noreply@github.com
+    commitName: GitHub
+    summary: Delete step.ino
+    description: 
+    timeString: 2022-06-29T11:29:17.000+09:00
+    commitTimeString: 2022-06-29T11:29:17.000+09:00
+    changes:
+    - path: step.ino
+      fullPath: "C:\\Users\\DTNLab1\\OneDrive\\\uBC14\uD0D5 \uD654\uBA74\\3D_modeling\\step.ino"
+      projectPath: ..\step.ino
+      originalPath: 
+      indexStatus: 5
+      workTreeStatus: 0
+  - commitID: 5112babe2baa05dd289fc795ec029701bf042c7a
+    mergeA: 
+    mergeB: 
+    authorName: SparrawBecomePigeon
+    authorEmail: 105587238+SparrawBecomePigeon@users.noreply.github.com
+    commitEmail: noreply@github.com
+    commitName: GitHub
+    summary: Delete lidar.ino
+    description: 
+    timeString: 2022-06-29T11:29:10.000+09:00
+    commitTimeString: 2022-06-29T11:29:10.000+09:00
+    changes:
+    - path: lidar.ino
+      fullPath: "C:\\Users\\DTNLab1\\OneDrive\\\uBC14\uD0D5 \uD654\uBA74\\3D_modeling\\lidar.ino"
+      projectPath: ..\lidar.ino
+      originalPath: 
+      indexStatus: 5
+      workTreeStatus: 0
+  - commitID: 06ad824d0ca69afc4355b3f041ffabf6086d9963
+    mergeA: 
+    mergeB: 
+    authorName: SparrawBecomePigeon
+    authorEmail: 105587238+SparrawBecomePigeon@users.noreply.github.com
+    commitEmail: noreply@github.com
+    commitName: GitHub
+    summary: Add files via upload
+    description: 
+    timeString: 2022-06-29T11:26:19.000+09:00
+    commitTimeString: 2022-06-29T11:26:19.000+09:00
+    changes:
+    - path: lidar.ino
+      fullPath: "C:\\Users\\DTNLab1\\OneDrive\\\uBC14\uD0D5 \uD654\uBA74\\3D_modeling\\lidar.ino"
+      projectPath: ..\lidar.ino
+      originalPath: 
+      indexStatus: 4
+      workTreeStatus: 0
+    - path: step.ino
+      fullPath: "C:\\Users\\DTNLab1\\OneDrive\\\uBC14\uD0D5 \uD654\uBA74\\3D_modeling\\step.ino"
+      projectPath: ..\step.ino
+      originalPath: 
+      indexStatus: 4
+      workTreeStatus: 0
+  - commitID: 9423c058eb73d2296415e986cf7717eedbfe457d
+    mergeA: 
+    mergeB: 
+    authorName: SparrawBecomePigeon
+    authorEmail: 105587238+SparrawBecomePigeon@users.noreply.github.com
+    commitEmail: noreply@github.com
+    commitName: GitHub
+    summary: Create README.md
+    description: 
+    timeString: 2022-05-15T19:39:42.000+09:00
+    commitTimeString: 2022-05-15T19:39:42.000+09:00
+    changes:
+    - path: README.md
+      fullPath: "C:\\Users\\DTNLab1\\OneDrive\\\uBC14\uD0D5 \uD654\uBA74\\3D_modeling\\README.md"
+      projectPath: ..\README.md
+      originalPath: 
+      indexStatus: 4
+      workTreeStatus: 0
