@@ -3,6 +3,7 @@
 #include <TFMPlus.h>  // Include TFMini Plus Library v1.5.0
 TFMPlus tfmP;         // Create a TFMini Plus object
 #include <SoftwareSerial.h>
+#include "WiFiEsp.h"
 
 #define sm1_pin1 2
 #define sm1_pin2 3
@@ -16,6 +17,15 @@ TFMPlus tfmP;         // Create a TFMini Plus object
 
 #define aroundInterval 12900
 
+#define LIDARDATASIZE 36
+
+char ssid[] = "AndroidHotspot2409";            // your network SSID (name)
+char pass[] = "12345678";        // your network password
+int status = WL_IDLE_STATUS;     // the Wifi radio's status
+int reqCount = 0;                // number of requests received
+
+WiFiEspServer server(80);
+
 AccelStepper stepper1(4, sm1_pin1, sm1_pin3, sm1_pin2, sm1_pin4);
 AccelStepper stepper2(4, sm2_pin1, sm2_pin3, sm2_pin2, sm2_pin4);
 
@@ -28,10 +38,35 @@ unsigned long previousMillis;
 
 void setup() {
   Serial.begin(9600);
-  Serial1.begin(115200);  // Initialize TFMPLus device serial port.
+  Serial1.begin(9600); // initialize serial for ESP module
+  Serial2.begin(115200);  // Initialize TFMPLus device serial port.
   delay(20);               // Give port time to initalize
-  tfmP.begin(&Serial1);   // Initialize device library object and...
+  tfmP.begin(&Serial2);   // Initialize device library object and...
   // pass device serial port to the object.
+
+  // initialize ESP module
+  WiFi.init(&Serial1);
+
+  // check for the presence of the shield
+  if (WiFi.status() == WL_NO_SHIELD) {
+    Serial.println("WiFi shield not present");
+    // don't continue
+    while (true);
+  }
+
+  // attempt to connect to WiFi network
+  while ( status != WL_CONNECTED) {
+    Serial.print("Attempting to connect to WPA SSID: ");
+    Serial.println(ssid);
+    // Connect to WPA/WPA2 network
+    status = WiFi.begin(ssid, pass);
+  }
+
+  Serial.println("You're connected to the network");
+  printWifiStatus();
+  
+  // start the web server on port 80
+  server.begin();
 
   // Send some example commands to the TFMini-Plus
   // - - Perform a system reset - - - - - - - - - - -
@@ -64,47 +99,112 @@ void setup() {
   else tfmP.printReply();
   
   delay(2000);
-
-  currentMillis = millis();
-  previousMillis = millis();
-  int currentDist = 0, maxDist = 0;
-  unsigned long maxDistMillis;
-  while(true){
-    currentMillis = millis();
-    if(currentMillis - previousMillis > aroundInterval) break;
-    RightRound();
-    currentDist = getDataAround();
-    if(currentDist > maxDist){
-      maxDist = currentDist;
-      maxDistMillis = currentMillis - previousMillis;
-    }
-  }
-  Stop();
-  previousMillis = millis();
-  while(true){
-    currentMillis = millis();
-    if(currentMillis - previousMillis > maxDistMillis) break;
-    RightRound();
-  }
-  Stop();
 }
 
-int getDataAround(){
-  if( tfmP.getData( tfDist, tfFlux, tfTemp)) // Get data from the device.
-  {
-    Serial.print( "Dist : ");   // display distance,
-    Serial.print(tfDist);
-    Serial.println( "cm");
-  }
-  else                  // If the command fails...
-  {
-    tfmP.printFrame();  // display the error and HEX dataa
-  }
+int getDataLidar(){
+  tfmP.getData( tfDist); // Get data from the device.
+  Serial.print( "Dist : ");   // display distance,
+  Serial.print(tfDist);
+  Serial.println( "cm");
   return tfDist;
 }
 
 void loop() {
+  previousMillis = millis();
+  int lidarRunMillis = aroundInterval/ (LIDARDATASIZE / 2);
+  int lidarData[LIDARDATASIZE];
+  int dataCount = 0;
+  while(true){
+    if(!((currentMillis - previousMillis) % lidarRunMillis)){
+      if(dataCount > LIDARDATASIZE - 1){
+        Serial.println("ERROR: Lidar data Overflow!!!");
+        break;
+      }
+      lidarData[dataCount] = getDataLidar();
+      dataCount++;
+    }
+    RightRound();
+    currentMillis = millis();
+    if(currentMillis - previousMillis >= aroundInterval) break;
+  }
+  Serial.println("==============");
+
   
+  // listen for incoming clients
+  WiFiEspClient client = server.available();
+  if (client) {
+    Serial.println("New client");
+    // an http request ends with a blank line
+    boolean currentLineIsBlank = true;
+    while (client.connected()) {
+      if (client.available()) {
+        char c = client.read();
+        Serial.write(c);
+        // if you've gotten to the end of the line (received a newline
+        // character) and the line is blank, the http request has ended,
+        // so you can send a reply
+        if (c == '\n' && currentLineIsBlank) {
+          Serial.println("Sending response");
+          
+          // send a standard http response header
+          // use \r\n instead of many println statements to speedup data send
+          client.print(
+            "HTTP/1.1 200 OK\r\n"
+            "Content-Type: text/html\r\n"
+            "Connection: close\r\n"  // the connection will be closed after completion of the response
+            "Refresh: 20\r\n"        // refresh the page automatically every 20 sec
+            "\r\n");
+          client.print("<!DOCTYPE HTML>\r\n");
+          client.print("<html>\r\n");
+          client.print("<h1>Hello World!</h1>\r\n");
+          client.print("<h1>Lidar Data : " + String(lidarData[2]) + "</h2>\r\n");
+          client.print("Requests received: ");
+          client.print(++reqCount);
+          client.print("<br>\r\n");
+          client.print("Analog input A0: ");
+          client.print(analogRead(0));
+          client.print("<br>\r\n");
+          client.print("</html>\r\n");
+          break;
+        }
+        if (c == '\n') {
+          // you're starting a new line
+          currentLineIsBlank = true;
+        }
+        else if (c != '\r') {
+          // you've gotten a character on the current line
+          currentLineIsBlank = false;
+        }
+      }
+    }
+    // give the web browser time to receive the data
+    delay(10);
+
+    // close the connection:
+    client.stop();
+    Serial.println("Client disconnected");
+  }
+
+  delay(3000);
+}
+
+
+void printWifiStatus()
+{
+  // print the SSID of the network you're attached to
+  Serial.print("SSID: ");
+  Serial.println(WiFi.SSID());
+
+  // print your WiFi shield's IP address
+  IPAddress ip = WiFi.localIP();
+  Serial.print("IP Address: ");
+  Serial.println(ip);
+  
+  // print where to go in the browser
+  Serial.println();
+  Serial.print("To see this page in action, open a browser to http://");
+  Serial.println(ip);
+  Serial.println();
 }
 
 void Stop(){
@@ -112,6 +212,12 @@ void Stop(){
   stepper2.setSpeed(0);
 }
 
+void GoDist(int dist){
+  while(true){
+    if(getDataLidar() < dist) break;
+    Go();
+  }
+}
 void Go(){
   stepper1.setSpeed(-1000);
   stepper2.setSpeed(1000);
@@ -119,15 +225,23 @@ void Go(){
   stepper2.runSpeed();
 }
 
-void RightAround(){
-  currentMillis = millis();
+void DetectAround(int &maxDist, unsigned long &maxDistMillis){
   previousMillis = millis();
+  int currentDist = 0;
+  maxDist = 0;
   while(true){
     currentMillis = millis();
     if(currentMillis - previousMillis > aroundInterval) break;
     RightRound();
+    currentDist = getDataLidar();
+    if(currentDist > maxDist){
+      maxDist = currentDist;
+      maxDistMillis = currentMillis - previousMillis;
+    }
   }
   Stop();
+  Serial.print("Init location detected! MaxDistMillis : ");
+  Serial.println(maxDistMillis);
 }
 
 void RightRound(){
