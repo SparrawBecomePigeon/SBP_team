@@ -1,3 +1,5 @@
+#include <StackArray.h>
+
 #include <AccelStepper.h>
 #include <SoftwareSerial.h>
 #include <TFMPlus.h>  // Include TFMini Plus Library v1.5.0
@@ -5,6 +7,7 @@ TFMPlus tfmP;         // Create a TFMini Plus object
 #include <SoftwareSerial.h>
 #include <ArduinoJson.h>
 #include "WiFiEsp.h"
+
 
 #define sm1_pin1 2
 #define sm1_pin2 3
@@ -35,8 +38,6 @@ int16_t tfTemp = 0;    // Internal temperature of Lidar sensor chip
 char dist[11];
 unsigned long currentMillis;
 unsigned long previousMillis;
-
-int cur_x = 0; int cur_y = 0;
 
 void setup() {
   Serial.begin(9600);
@@ -103,14 +104,61 @@ void setup() {
   delay(2000);
 }
 
-void loop() {
+int cur_x = 0; int cur_y = 0;
+int cur_rot = 90;
 
+StackArray<int> st_x;
+StackArray<int> st_y;
+StackArray<unsigned long> st_rot;
+
+void loop() {
   String jsonstr = "";
   LidarDetectAround(jsonstr);
   SendDataWeb(jsonstr);
-  
-  
+  delay(3000);
 
+  if(st_x.isEmpty()){
+    Serial.println("FINISH!!!");
+    delay(10000);
+  }
+  int nt_x = st_x.pop();
+  int nt_y = st_y.pop();
+  unsigned long nt_rot = st_rot.pop();
+  int nt_dist;
+
+  previousMillis = millis();
+  while(true){
+    currentMillis = millis();
+    if(currentMillis - previousMillis >= nt_rot) break;
+    LeftRound();
+  }
+  Stop();
+  //(360 * (currentMillis - previousMillis) / aroundInterval)
+  cur_rot += 360 * nt_rot / aroundInterval;
+  cur_rot = cur_rot % 360;
+  nt_dist = getDataLidar();
+  Serial.print("nt_dist = ");
+  Serial.println(nt_dist);
+  unsigned long lidarInterval = aroundInterval / LIDARDATASIZE;
+  previousMillis = millis();
+  while(true){
+    currentMillis = millis();
+    if(currentMillis - previousMillis >= lidarInterval / 3){
+      int currentLidar = getDataLidar();
+      if(currentLidar < 50 && currentLidar != 0) break;
+      lidarInterval += lidarInterval;
+    }
+    Go();
+  }
+  Stop();
+  cur_x = int((nt_dist - getDataLidar()) * (cos(radians(cur_rot))));
+  cur_y = int((nt_dist - getDataLidar()) * (sin(radians(cur_rot))));
+  Serial.print("Current Point [x, y] = ");
+  Serial.print(cur_x);
+  Serial.print(" , ");
+  Serial.println(cur_y);
+  Serial.print("Current Roatation = ");
+  Serial.println(cur_rot);
   delay(3000);
 }
 
@@ -173,18 +221,18 @@ int getDataLidar(){
 }
 
 void LidarDetectAround(String& jsonstr){
-  previousMillis = millis();
   unsigned long lidarInterval = aroundInterval / LIDARDATASIZE;
   unsigned long lidarRunMillis = millis();
   
-  StaticJsonDocument<2048> doc;
+  StaticJsonDocument<1024> doc;
   JsonObject root = doc.to<JsonObject>();
   JsonArray Lidar_Location = root.createNestedArray("Lidar_Location");
   Lidar_Location[0] = cur_x;
   Lidar_Location[1] = cur_y;
   JsonArray LidarData_x = root.createNestedArray("LidarData_x");
   JsonArray LidarData_y = root.createNestedArray("LidarData_y");
-  int dataCount = 0;
+  int dataCount = 0; int previousDist = -1;
+  previousMillis = millis();
   while(true){
     currentMillis = millis();
     if(currentMillis - previousMillis >= aroundInterval) break;
@@ -195,8 +243,15 @@ void LidarDetectAround(String& jsonstr){
         break;
       }
       int currentDist = getDataLidar();
-      LidarData_x[dataCount] = int(currentDist * (cos(radians(90 + (360 * (currentMillis - previousMillis)) / aroundInterval))));
-      LidarData_y[dataCount] = int(currentDist * (sin(radians(90 + (360 * (currentMillis - previousMillis)) / aroundInterval))));
+      if(previousDist < 0) { previousDist = currentDist; }
+      if(currentDist == 0 || currentDist - previousDist > 2 * previousDist ){
+        st_x.push(cur_x);
+        st_y.push(cur_y);
+        st_rot.push(currentMillis - previousMillis);
+      }
+      previousDist = currentDist;
+      LidarData_x[dataCount] = int(currentDist * (cos(radians(cur_rot + (360 * (currentMillis - previousMillis) / aroundInterval)))));
+      LidarData_y[dataCount] = int(currentDist * (sin(radians(cur_rot + (360 * (currentMillis - previousMillis) / aroundInterval)))));
       dataCount++;
     }
     LeftRound();
