@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   cacheType: 1
-  lastUpdatedAtString: 2022-06-29T12:26:58.367+09:00
-  initializedAtString: 2022-06-29T12:13:28.015+09:00
+  lastUpdatedAtString: 2022-07-03T19:09:33.962+09:00
+  initializedAtString: 2022-07-03T19:09:33.962+09:00
   currentGitRemote:
     name: origin
     url: https://github.com/SparrawBecomePigeon/3D_modeling.git
@@ -24,14 +24,14 @@ MonoBehaviour:
     function: 0
     token: 
   currentGitBranch:
-    name: main
-    tracking: origin/main
+    name: hojin
+    tracking: origin/hojin
   currentConfigBranch:
-    name: main
+    name: hojin
     remote:
       name: origin
       url: https://github.com/SparrawBecomePigeon/3D_modeling.git
-    trackingBranch: main
+    trackingBranch: hojin
   currentConfigRemote:
     name: origin
     url: https://github.com/SparrawBecomePigeon/3D_modeling.git
