@@ -3,6 +3,7 @@
 #include <TFMPlus.h>  // Include TFMini Plus Library v1.5.0
 TFMPlus tfmP;         // Create a TFMini Plus object
 #include <SoftwareSerial.h>
+#include <ArduinoJson.h>
 #include "WiFiEsp.h"
 
 #define sm1_pin1 2
@@ -16,7 +17,6 @@ TFMPlus tfmP;         // Create a TFMini Plus object
 #define sm2_pin4 9
 
 #define aroundInterval 12900
-
 #define LIDARDATASIZE 36
 
 char ssid[] = "AndroidHotspot2409";            // your network SSID (name)
@@ -110,26 +110,17 @@ int getDataLidar(){
 }
 
 void loop() {
-  previousMillis = millis();
-  int lidarRunMillis = aroundInterval/ (LIDARDATASIZE / 2);
-  int lidarData[LIDARDATASIZE];
-  int dataCount = 0;
-  while(true){
-    if(!((currentMillis - previousMillis) % lidarRunMillis)){
-      if(dataCount > LIDARDATASIZE - 1){
-        Serial.println("ERROR: Lidar data Overflow!!!");
-        break;
-      }
-      lidarData[dataCount] = getDataLidar();
-      dataCount++;
-    }
-    RightRound();
-    currentMillis = millis();
-    if(currentMillis - previousMillis >= aroundInterval) break;
-  }
-  Serial.println("==============");
 
+  String jsonstr = "";
+  LidarDetectAround(jsonstr);
+  SendDataWeb(jsonstr);
   
+  
+
+  delay(3000);
+}
+
+void SendDataWeb(const String& jsonstr){
   // listen for incoming clients
   WiFiEspClient client = server.available();
   if (client) {
@@ -156,14 +147,7 @@ void loop() {
             "\r\n");
           client.print("<!DOCTYPE HTML>\r\n");
           client.print("<html>\r\n");
-          client.print("<h1>Hello World!</h1>\r\n");
-          client.print("<h1>Lidar Data : " + String(lidarData[2]) + "</h2>\r\n");
-          client.print("Requests received: ");
-          client.print(++reqCount);
-          client.print("<br>\r\n");
-          client.print("Analog input A0: ");
-          client.print(analogRead(0));
-          client.print("<br>\r\n");
+          client.print("<h1>Lidar Data : " + jsonstr + "</h2>\r\n");
           client.print("</html>\r\n");
           break;
         }
@@ -184,10 +168,34 @@ void loop() {
     client.stop();
     Serial.println("Client disconnected");
   }
-
-  delay(3000);
 }
 
+void LidarDetectAround(String& jsonstr){
+  previousMillis = millis();
+  int lidarRunMillis = aroundInterval / LIDARDATASIZE;
+  
+  StaticJsonDocument<384> doc;
+  JsonObject root = doc.to<JsonObject>();
+  JsonArray LidarData = root.createNestedArray("LidarData");
+  int dataCount = 0;
+  while(true){
+    if(!((currentMillis - previousMillis) % lidarRunMillis)){
+      if(dataCount > LIDARDATASIZE - 1){
+        Serial.println("ERROR: Lidar data Overflow!!!");
+        break;
+      }
+      LidarData[dataCount] = getDataLidar();
+      dataCount++;
+    }
+    RightRound();
+    currentMillis = millis();
+    if(currentMillis - previousMillis >= aroundInterval) break;
+  }
+  Serial.println("==============");
+  serializeJsonPretty(doc, jsonstr);
+  Serial.println(jsonstr);
+  Serial.println("==============");
+}
 
 void printWifiStatus()
 {
@@ -212,36 +220,11 @@ void Stop(){
   stepper2.setSpeed(0);
 }
 
-void GoDist(int dist){
-  while(true){
-    if(getDataLidar() < dist) break;
-    Go();
-  }
-}
 void Go(){
   stepper1.setSpeed(-1000);
   stepper2.setSpeed(1000);
   stepper1.runSpeed();
   stepper2.runSpeed();
-}
-
-void DetectAround(int &maxDist, unsigned long &maxDistMillis){
-  previousMillis = millis();
-  int currentDist = 0;
-  maxDist = 0;
-  while(true){
-    currentMillis = millis();
-    if(currentMillis - previousMillis > aroundInterval) break;
-    RightRound();
-    currentDist = getDataLidar();
-    if(currentDist > maxDist){
-      maxDist = currentDist;
-      maxDistMillis = currentMillis - previousMillis;
-    }
-  }
-  Stop();
-  Serial.print("Init location detected! MaxDistMillis : ");
-  Serial.println(maxDistMillis);
 }
 
 void RightRound(){
