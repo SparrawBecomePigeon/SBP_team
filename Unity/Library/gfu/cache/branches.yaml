@@ -13,11 +13,23 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   cacheType: 2
-  lastUpdatedAtString: 2022-06-29T12:26:58.423+09:00
-  initializedAtString: 2022-06-29T12:14:02.381+09:00
-  localBranches: []
+  lastUpdatedAtString: 2022-07-03T19:28:42.545+09:00
+  initializedAtString: 2022-07-03T19:28:42.536+09:00
+  localBranches:
+  - name: changhyeon
+    tracking: origin/changhyeon
+  - name: hojin
+    tracking: origin/hojin
+  - name: main
+    tracking: origin/main
   remoteBranches:
+  - name: origin/changhyeon
+    tracking: '[None]'
   - name: origin/HEAD
+    tracking: '[None]'
+  - name: origin/hojin
+    tracking: '[None]'
+  - name: origin/main
     tracking: '[None]'
   remotes:
   - name: origin
@@ -28,17 +40,53 @@ MonoBehaviour:
     function: 0
     token: 
   localConfigBranches:
-    keys: []
-    values: []
+    keys:
+    - changhyeon
+    - hojin
+    - main
+    values:
+    - name: changhyeon
+      remote:
+        name: origin
+        url: https://github.com/SparrawBecomePigeon/3D_modeling.git
+      trackingBranch: changhyeon
+    - name: hojin
+      remote:
+        name: origin
+        url: https://github.com/SparrawBecomePigeon/3D_modeling.git
+      trackingBranch: hojin
+    - name: main
+      remote:
+        name: origin
+        url: https://github.com/SparrawBecomePigeon/3D_modeling.git
+      trackingBranch: main
   remoteConfigBranches:
     keys:
     - origin
     subKeys:
     - Values:
+      - changhyeon
       - HEAD
+      - hojin
+      - main
     subKeyValues:
     - Values:
+      - name: changhyeon
+        remote:
+          name: origin
+          url: https://github.com/SparrawBecomePigeon/3D_modeling.git
+        trackingBranch: 
       - name: HEAD
+        remote:
+          name: origin
+          url: https://github.com/SparrawBecomePigeon/3D_modeling.git
+        trackingBranch: 
+      - name: hojin
+        remote:
+          name: origin
+          url: https://github.com/SparrawBecomePigeon/3D_modeling.git
+        trackingBranch: 
+      - name: main
         remote:
           name: origin
           url: https://github.com/SparrawBecomePigeon/3D_modeling.git
