@@ -16,8 +16,8 @@ TFMPlus tfmP;         // Create a TFMini Plus object
 #define sm2_pin3 8
 #define sm2_pin4 9
 
-#define aroundInterval 12900  // 한바퀴 도는 시간
-#define LIDARDATASIZE 36      // 한바퀴 동안 측정할 데이터 개수
+#define aroundInterval 13000  // 한바퀴 도는 시간
+#define LIDARDATASIZE 72      // 한바퀴 동안 측정할 데이터 개수 현재 360 / 72 = 5도 마다 측정
 
 char ssid[] = "AndroidHotspot2409";            // your network SSID (name)
 char pass[] = "12345678";        // your network password
@@ -35,6 +35,8 @@ int16_t tfTemp = 0;    // Internal temperature of Lidar sensor chip
 char dist[11];
 unsigned long currentMillis;
 unsigned long previousMillis;
+
+int cur_x = 0; int cur_y = 0;
 
 void setup() {
   Serial.begin(9600);
@@ -175,23 +177,29 @@ void LidarDetectAround(String& jsonstr){
   unsigned long lidarInterval = aroundInterval / LIDARDATASIZE;
   unsigned long lidarRunMillis = millis();
   
-  StaticJsonDocument<40 + 10 * LIDARDATASIZE> doc;
+  StaticJsonDocument<2048> doc;
   JsonObject root = doc.to<JsonObject>();
-  JsonArray LidarData = root.createNestedArray("LidarData");
+  JsonArray Lidar_Location = root.createNestedArray("Lidar_Location");
+  Lidar_Location[0] = cur_x;
+  Lidar_Location[1] = cur_y;
+  JsonArray LidarData_x = root.createNestedArray("LidarData_x");
+  JsonArray LidarData_y = root.createNestedArray("LidarData_y");
   int dataCount = 0;
   while(true){
     currentMillis = millis();
     if(currentMillis - previousMillis >= aroundInterval) break;
     if((currentMillis - lidarRunMillis)>= lidarInterval){
       lidarRunMillis += lidarInterval;
-      if(dataCount >= LIDARDATASIZE - 1){
+      if(dataCount > LIDARDATASIZE - 1){
         Serial.println("ERROR: Lidar data Overflow!!!");
         break;
       }
-      LidarData[dataCount] = getDataLidar();
+      int currentDist = getDataLidar();
+      LidarData_x[dataCount] = int(currentDist * (cos(radians(90 + (360 * (currentMillis - previousMillis)) / aroundInterval))));
+      LidarData_y[dataCount] = int(currentDist * (sin(radians(90 + (360 * (currentMillis - previousMillis)) / aroundInterval))));
       dataCount++;
     }
-    RightRound();
+    LeftRound();
   }
   Serial.println("==============");
   serializeJsonPretty(doc, jsonstr);
