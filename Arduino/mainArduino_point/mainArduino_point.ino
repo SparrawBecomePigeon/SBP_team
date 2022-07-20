@@ -1,13 +1,9 @@
 #include <StackArray.h>
-
 #include <AccelStepper.h>
-#include <SoftwareSerial.h>
 #include <TFMPlus.h>  // Include TFMini Plus Library v1.5.0
 TFMPlus tfmP;         // Create a TFMini Plus object
-#include <SoftwareSerial.h>
 #include <ArduinoJson.h>
 #include "WiFiEsp.h"
-
 
 #define sm1_pin1 2
 #define sm1_pin2 3
@@ -25,9 +21,10 @@ TFMPlus tfmP;         // Create a TFMini Plus object
 char ssid[] = "AndroidHotspot2409";            // your network SSID (name)
 char pass[] = "12345678";        // your network password
 int status = WL_IDLE_STATUS;     // the Wifi radio's status
-int reqCount = 0;                // number of requests received
-
-WiFiEspServer server(80);
+char server[] = "54.180.142.70";
+int server_port = 3000;
+// Initialize the Ethernet client object
+WiFiEspClient client;
 
 AccelStepper stepper1(4, sm1_pin1, sm1_pin3, sm1_pin2, sm1_pin4);
 AccelStepper stepper2(4, sm2_pin1, sm2_pin3, sm2_pin2, sm2_pin4);
@@ -56,7 +53,7 @@ void setup() {
     // don't continue
     while (true);
   }
-
+  
   // attempt to connect to WiFi network
   while ( status != WL_CONNECTED) {
     Serial.print("Attempting to connect to WPA SSID: ");
@@ -64,12 +61,9 @@ void setup() {
     // Connect to WPA/WPA2 network
     status = WiFi.begin(ssid, pass);
   }
-
+  
   Serial.println("You're connected to the network");
   printWifiStatus();
-  
-  // start the web server on port 80
-  server.begin();
 
   // Send some example commands to the TFMini-Plus
   // - - Perform a system reset - - - - - - - - - - -
@@ -112,20 +106,26 @@ StackArray<int> st_y;
 StackArray<unsigned long> st_rot;
 
 void loop() {
-  String jsonstr = "";
-  LidarDetectAround(jsonstr);
-  SendDataWeb(jsonstr);
+  String jsonstr = ""; // json string 선언
+  jsonstr = LidarDetectAround(); // 반시계방향으로 360도 돌면서 거리 측정 및 좌표로 환산
+  SendDataWeb(jsonstr); // 측정된 좌표 웹에 전송
   delay(3000);
 
   if(st_x.isEmpty()){
     Serial.println("FINISH!!!");
     delay(10000);
   }
+
+  // 다음 측정 위치로 이동을 위한 좌표 및 방위각 설정
   int nt_x = st_x.pop();
   int nt_y = st_y.pop();
   unsigned long nt_rot = st_rot.pop();
   int nt_dist;
 
+  Serial.print("Rotation : ");
+  Serial.println(360 * nt_rot / aroundInterval - 90);
+
+  // 이동 방위각 회전
   previousMillis = millis();
   while(true){
     currentMillis = millis();
@@ -139,11 +139,14 @@ void loop() {
   nt_dist = getDataLidar();
   Serial.print("nt_dist = ");
   Serial.println(nt_dist);
+  delay(1000);
+
+  // 이동
   unsigned long lidarInterval = aroundInterval / LIDARDATASIZE;
   previousMillis = millis();
   while(true){
     currentMillis = millis();
-    if(currentMillis - previousMillis >= lidarInterval / 3){
+    if(currentMillis - previousMillis >= lidarInterval){
       int currentLidar = getDataLidar();
       if(currentLidar < 50 && currentLidar != 0) break;
       lidarInterval += lidarInterval;
@@ -153,63 +156,58 @@ void loop() {
   Stop();
   cur_x = int((nt_dist - getDataLidar()) * (cos(radians(cur_rot))));
   cur_y = int((nt_dist - getDataLidar()) * (sin(radians(cur_rot))));
+
+  // 이동 후 방위각 90도로 다시 돌아옴
+  previousMillis = millis();
+  while(true){
+    currentMillis = millis();
+    if(currentMillis - previousMillis >= nt_rot) break;
+    RightRound();
+  }
+  
   Serial.print("Current Point [x, y] = ");
   Serial.print(cur_x);
   Serial.print(" , ");
   Serial.println(cur_y);
-  Serial.print("Current Roatation = ");
-  Serial.println(cur_rot);
   delay(3000);
 }
 
 void SendDataWeb(const String& jsonstr){
-  // listen for incoming clients
-  WiFiEspClient client = server.available();
-  if (client) {
-    Serial.println("New client");
-    // an http request ends with a blank line
-    boolean currentLineIsBlank = true;
-    while (client.connected()) {
-      if (client.available()) {
-        char c = client.read();
-        Serial.write(c);
-        // if you've gotten to the end of the line (received a newline
-        // character) and the line is blank, the http request has ended,
-        // so you can send a reply
-        if (c == '\n' && currentLineIsBlank) {
-          Serial.println("Sending response");
-          
-          // send a standard http response header
-          // use \r\n instead of many println statements to speedup data send
-          client.print(
-            "HTTP/1.1 200 OK\r\n"
-            "Content-Type: text/html\r\n"
-            "Connection: close\r\n"  // the connection will be closed after completion of the response
-            "Refresh: 20\r\n"        // refresh the page automatically every 20 sec
-            "\r\n");
-          client.print("<!DOCTYPE HTML>\r\n");
-          client.print("<html>\r\n");
-          client.print("<h1>Lidar Data : " + jsonstr + "</h2>\r\n");
-          client.print("</html>\r\n");
-          break;
-        }
-        if (c == '\n') {
-          // you're starting a new line
-          currentLineIsBlank = true;
-        }
-        else if (c != '\r') {
-          // you've gotten a character on the current line
-          currentLineIsBlank = false;
-        }
-      }
+  Serial.println("Starting connection to server...");
+  previousMillis = millis();
+  while(true){
+    currentMillis = millis();
+    // if you get a connection, report back via serial
+    if (client.connect(server, server_port)) {
+      Serial.println("Connected to server");
+  
+      client.print(F("POST /list"));
+      client.print(F(" HTTP/1.1\r\n"));
+      client.print(F("Cache-Control: no-cache\r\n"));
+      client.print(F("Host: 54.180.142.70:3000\r\n"));
+      client.print(F("User-Agent: Arduino\r\n"));
+      client.print(F("Content-Type: application/json;charset=UTF-8\r\n"));
+      client.print(F("Content-Length: "));
+      client.println(jsonstr.length());
+      client.println();
+      client.println(jsonstr);
+      client.print(F("\r\n\r\n"));
+      break;
     }
-    // give the web browser time to receive the data
-    delay(100);
-
-    // close the connection:
-    client.stop();
-    Serial.println("Client disconnected");
+    else {
+      // if you couldn't make a connection
+      Serial.println("Connection failed and retry");
+      delay(100);
+    }
+    if(currentMillis - previousMillis >= 2000){
+      Serial.println("Conection failed and end");
+      break;
+    }
   }
+  client.flush();
+  client.stop(); // 클라이언트 접속 종료
+  // close the connection:
+  Serial.println("Client disconnected");
 }
 
 int getDataLidar(){
@@ -220,9 +218,10 @@ int getDataLidar(){
   return tfDist;
 }
 
-void LidarDetectAround(String& jsonstr){
+String LidarDetectAround(){
   unsigned long lidarInterval = aroundInterval / LIDARDATASIZE;
   unsigned long lidarRunMillis = millis();
+  String jsonstr = "";
   
   StaticJsonDocument<1024> doc;
   JsonObject root = doc.to<JsonObject>();
@@ -260,6 +259,7 @@ void LidarDetectAround(String& jsonstr){
   serializeJsonPretty(doc, jsonstr);
   Serial.println(jsonstr);
   Serial.println("==============");
+  return jsonstr;
 }
 
 void printWifiStatus()
@@ -267,17 +267,17 @@ void printWifiStatus()
   // print the SSID of the network you're attached to
   Serial.print("SSID: ");
   Serial.println(WiFi.SSID());
-
+  
   // print your WiFi shield's IP address
   IPAddress ip = WiFi.localIP();
   Serial.print("IP Address: ");
   Serial.println(ip);
-  
-  // print where to go in the browser
-  Serial.println();
-  Serial.print("To see this page in action, open a browser to http://");
-  Serial.println(ip);
-  Serial.println();
+
+  // print the received signal strength
+  long rssi = WiFi.RSSI();
+  Serial.print("Signal strength (RSSI):");
+  Serial.print(rssi);
+  Serial.println(" dBm");
 }
 
 void Stop(){
