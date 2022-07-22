@@ -108,8 +108,7 @@ void loop() {
   String jsonstr = ""; // json string 선언
   LidarDetectAround(jsonstr); // 반시계방향으로 360도 돌면서 거리 측정 및 좌표로 환산
   SendDataWeb(jsonstr); // 측정된 좌표 웹에 전송
-  delay(3000);
-
+    
   if(st_x.isEmpty()){
     Serial.println("FINISH!!!");
     delay(10000);
@@ -182,10 +181,8 @@ void SendDataWeb(const String& jsonstr){
       
       // Make a HTTP request
       client.print(F("POST /send HTTP/1.1\r\n"));
-      client.print(F("Connection: keep-alive\r\n"));
-      client.print(F("Content-Type: application/json; charset=utf-8\r\n"));
+      client.print(F("Content-Type: application/json\r\n"));
       client.print(F("Host: 54.180.142.70:3000\r\n"));
-      client.print(F("Accept: */*\r\n"));
       client.print(F("Content-Length: "));
       client.println(jsonstr.length());
       client.println();
@@ -222,7 +219,7 @@ void LidarDetectAround(String& jsonstr){
   unsigned long lidarInterval = aroundInterval / LIDARDATASIZE;
   unsigned long lidarRunMillis = millis();
   
-  DynamicJsonDocument doc(2048);
+  DynamicJsonDocument doc(1024);
   JsonObject root = doc.to<JsonObject>();
   JsonArray Lidar_Location = root.createNestedArray("Lidar_Location");
   Lidar_Location[0] = cur_x;
@@ -255,7 +252,7 @@ void LidarDetectAround(String& jsonstr){
     LeftRound();
   }
   Serial.println("==============");
-  serializeJsonPretty(doc, jsonstr);
+  serializeJson(doc, jsonstr);
   Serial.println(jsonstr);
   Serial.println("==============");
   return jsonstr;
