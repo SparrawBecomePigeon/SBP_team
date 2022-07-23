@@ -1,18 +1,24 @@
 var express = require('express');
 var router = express.Router();
 var path = require('path');
+var fs = require('fs');
+var sanitizeHtml = require('sanitize-html');
+var template = require('../lib/template.js');
 
-/* GET home page. */
-router.get('/', function(req, res, next) {
-  var publicPath = path.join(__dirname, '/sample1/1.html');
-  router.use(express.static(publicPath));
-  res.render('index', { title: 'Express' }); 
-});
+//route, routing
+//app.get('/', (req, res) => res.send('Hello World!'))
+router.get('/', function(request, response) { 
+    var title = 'Welcome';
+    var description = 'Hello, Node.js';
+    var list = template.list(request.list);
+    var html = template.HTML(title, list,
+      `
+      <h2>${title}</h2>${description}
+      <img src="/images/hello.jpg" style="width:300px; display:block; margin-top:10px;">
+      `,
+      `<a href="/topic/create">create</a>`
+    ); 
+    response.send(html);
+  });
 
-// router.get('/', function(req, res, next) {
-//   var publicPath = path.join(__dirname, '/sample1/1.html');
-//   console.log(__dirname);
-//   router.use(express.static(publicPath));
-// });
-
-module.exports = router;
+  module.exports = router;
