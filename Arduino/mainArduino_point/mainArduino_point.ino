@@ -1,4 +1,5 @@
 #include <StackArray.h>
+#include <SoftwareSerial.h>
 #include <AccelStepper.h>
 #include <TFMPlus.h>  // Include TFMini Plus Library v1.5.0
 TFMPlus tfmP;         // Create a TFMini Plus object
@@ -21,8 +22,9 @@ TFMPlus tfmP;         // Create a TFMini Plus object
 char ssid[] = "AndroidHotspot2409";            // your network SSID (name)
 char pass[] = "12345678";        // your network password
 int status = WL_IDLE_STATUS;     // the Wifi radio's status
-char server[] = "54.180.142.70";
-int server_port = 3000;
+char server[] = "54.180.142.70";  // server IP address
+int server_port = 3000;           // server port number
+
 // Initialize the Ethernet client object
 WiFiEspClient client;
 
@@ -30,9 +32,6 @@ AccelStepper stepper1(4, sm1_pin1, sm1_pin3, sm1_pin2, sm1_pin4);
 AccelStepper stepper2(4, sm2_pin1, sm2_pin3, sm2_pin2, sm2_pin4);
 
 int16_t tfDist = 0;    // Distance to object in centimeters
-int16_t tfFlux = 0;    // Strength or quality of return signal
-int16_t tfTemp = 0;    // Internal temperature of Lidar sensor chip
-char dist[11];
 unsigned long currentMillis;
 unsigned long previousMillis;
 
@@ -95,7 +94,7 @@ void setup() {
   }
   else tfmP.printReply();
   
-  delay(2000);
+  delay(1000);
 }
 
 int cur_x = 0; int cur_y = 0;
@@ -107,10 +106,9 @@ StackArray<unsigned long> st_rot;
 
 void loop() {
   String jsonstr = ""; // json string 선언
-  jsonstr = LidarDetectAround(); // 반시계방향으로 360도 돌면서 거리 측정 및 좌표로 환산
+  LidarDetectAround(jsonstr); // 반시계방향으로 360도 돌면서 거리 측정 및 좌표로 환산
   SendDataWeb(jsonstr); // 측정된 좌표 웹에 전송
-  delay(3000);
-
+    
   if(st_x.isEmpty()){
     Serial.println("FINISH!!!");
     delay(10000);
@@ -169,7 +167,7 @@ void loop() {
   Serial.print(cur_x);
   Serial.print(" , ");
   Serial.println(cur_y);
-  delay(3000);
+  delay(2000);
 }
 
 void SendDataWeb(const String& jsonstr){
@@ -180,18 +178,17 @@ void SendDataWeb(const String& jsonstr){
     // if you get a connection, report back via serial
     if (client.connect(server, server_port)) {
       Serial.println("Connected to server");
-  
-      client.print(F("POST /list"));
-      client.print(F(" HTTP/1.1\r\n"));
-      client.print(F("Cache-Control: no-cache\r\n"));
+      
+      // Make a HTTP request
+      client.print(F("POST /send HTTP/1.1\r\n"));
+      client.print(F("Content-Type: application/json\r\n"));
       client.print(F("Host: 54.180.142.70:3000\r\n"));
-      client.print(F("User-Agent: Arduino\r\n"));
-      client.print(F("Content-Type: application/json;charset=UTF-8\r\n"));
       client.print(F("Content-Length: "));
       client.println(jsonstr.length());
       client.println();
       client.println(jsonstr);
-      client.print(F("\r\n\r\n"));
+  
+      Serial.println("Post success!!!");
       break;
     }
     else {
@@ -218,12 +215,11 @@ int getDataLidar(){
   return tfDist;
 }
 
-String LidarDetectAround(){
+void LidarDetectAround(String& jsonstr){
   unsigned long lidarInterval = aroundInterval / LIDARDATASIZE;
   unsigned long lidarRunMillis = millis();
-  String jsonstr = "";
   
-  StaticJsonDocument<1024> doc;
+  DynamicJsonDocument doc(1024);
   JsonObject root = doc.to<JsonObject>();
   JsonArray Lidar_Location = root.createNestedArray("Lidar_Location");
   Lidar_Location[0] = cur_x;
@@ -256,7 +252,7 @@ String LidarDetectAround(){
     LeftRound();
   }
   Serial.println("==============");
-  serializeJsonPretty(doc, jsonstr);
+  serializeJson(doc, jsonstr);
   Serial.println(jsonstr);
   Serial.println("==============");
   return jsonstr;
