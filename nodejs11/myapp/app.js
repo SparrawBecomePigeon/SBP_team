@@ -3,7 +3,7 @@ var app = express();
 var fs = require('fs');
 
 const bodyParser = require('body-parser'); 
-app.use(bodyParser.urlencoded({extended:true})); 
+app.use(bodyParser.urlencoded({extended:false})); 
 app.use(bodyParser.json());
 
 app.get('*', function(request, response, next){
@@ -13,9 +13,18 @@ app.get('*', function(request, response, next){
     });
   });
 
-app.use('/', require('./html/option'));
-// console.log(__dirname);
-// app.use(express.static(__dirname + '/html/sample5'));
+app.use('/default', require('./html/option'));
+
+// app.use(function(req, res, next) {
+//   res.status(404).send('Sorry cant find that!');
+// });
+
+app.use('/', express.static('./temp'));
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, + '/temp/index.html'));
+})
+
+
 
 var server = app.listen(3000, () => {
     console.log('app listening on port : 8000');
