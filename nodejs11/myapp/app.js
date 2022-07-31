@@ -20,9 +20,9 @@ app.use('/default', require('./html/option'));
 // });
 
 app.use('/', express.static('./temp'));
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, + '/temp/index.html'));
-})
+// app.get('/', (req, res) => {
+//   res.sendFile(path.join(__dirname, + '/html/control_send_page.html'));
+// })
 
 
 

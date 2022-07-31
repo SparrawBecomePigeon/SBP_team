@@ -6,20 +6,32 @@
     <title>Unity WebGL Player | Unity</title>
     <link rel="shortcut icon" href="TemplateData/favicon.ico">
     <link rel="stylesheet" href="TemplateData/style.css">
-
+    <!-- No, Javascript doesn't have access to the filesystem. 
+      Server side Javascript is a whole different story 
+      but I guess you don't mean that. -->
     <style>
-      #default{
-        width: 100px;
+      #text_group{
+        width: 500px;
         margin: auto;
       }
-      #default_btn{
+      #text{
+          width: fit-content;
+          margin: auto;
+          margin-right: 45px;
+      }
+      #default{
+        width: 250px;
+        margin: auto;
+      }
+      button{
         border: 1px solid skyblue;
+        
         background-color: rgba(0,0,0,0);
         color: skyblue;
         padding: 5px;
         width: 100px;
         height: 50px;;
-        margin: auto;
+        margin: 10px;
         border-top-left-radius: 5px;
         border-top-right-radius: 5px;
         border-bottom-left-radius: 5px;
@@ -31,10 +43,33 @@
 
   </head>
   <body>
-    <div id="default">
-      <button id="default_btn" onclick = "window.location='/default'">Back to Main</button>
+    <script src="script.js">
+      
+    </script>
+    <div id="text_group">
+      <h1 id="text">Sparraw Becomes Pigeon</h1>
     </div>
+    <div id="default">
+      <button id="default_btn" >Back to Main</button>
+      <button id="Modeling_btn" >Modeling List</button>
+      <script src="dir.php">
+        
+        var dir = '../Fbx';
+        var xmlHttp = new XMLHttpRequest();
+        xmlHttp.open('GET', directory, false); // false for synchronous request
+        xmlHttp.send(null);
+        var ret = xmlHttp.responseText;
 
+        var list = ["DoughNut_FBX", "Grass_block", "RubikCube"];
+        var count = 0;
+        while(count < list.length){
+          //document.write(`<li><a href="/modeling/${list[count]}">${list[count]}</a></li>`);
+          document.write(`<li><a href="/modeling/${dir[count]}">${dir[count]}</a></li>`);
+          count+=1;
+        }
+      </script>
+    </div>
+  
     <div id="unity-container" class="unity-desktop">
       <canvas id="unity-canvas" width=960 height=600></canvas>
       <div id="unity-loading-bar">

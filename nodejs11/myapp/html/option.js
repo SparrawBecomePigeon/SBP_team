@@ -7,12 +7,14 @@ var request = require('request');
 var template = require('../template/template.js');
 var control_tempalte = require('../template/control.js');
 var qs = require('querystring');
+var fsExtra = require('fs-extra');
+
 
 router.get('/', (req, res, next) => res.sendFile(__dirname + '/main.html'));
 router.post('/', (req, res, next) => {
   var post = req.body;
   var title = post.title;
-
+  fsExtra.emptyDirSync('html/index');
   // var jsonDataObj = { name : `${title}`};
   // request.post({
   //   url: 'http://13.125.205.44:3000/index',
@@ -48,12 +50,11 @@ router.post('/', (req, res, next) => {
   module.exports = router;
   `;
   fs.writeFile(`./data/${title}/${title}.js`, description, 'utf8', function(err){});
-
-  res.redirect('/default');
+  res.write("<script>alert('Success to send to Arduino')</script>");
+  res.write("<script>window.location=\"../default\"</script>");
+  //res.redirect('/default');
   
   next();
- 
-
 });
 
 router.get('/send', function (req, res) {
@@ -101,7 +102,7 @@ router.get('/index', (req, res, next) => {
 router.use('/control', require('./control'));
 router.get('/control', (req, res, next) => {
   
-  var data = fs.readFileSync('data/coordinate', 'utf8');
+  var data = fs.readFileSync('html/coordinate', 'utf8');
   const lines = data.split(/\r?\n/);
     
   var x = lines[0];
@@ -116,19 +117,32 @@ router.post('/control', (req, res, next) => {
   var x = req.body.control_x;
   var y = req.body.control_y;
   var description = `${x}\n${y}`;
-  fs.writeFile(`data/coordinate`, description, 'utf8', function(err){ //여기서 적은걸로
+  fs.writeFile(`html/coordinate`, description, 'utf8', function(err){ //여기서 적은걸로
     res.redirect('/default/control');  
   })
 });
 
 router.post('/answer', (req, res, next) => {
-  var data = fs.readFileSync('data/coordinate', 'utf8');
+  var data = fs.readFileSync('html/coordinate', 'utf8');
   const lines = data.split(/\r?\n/);
     
   var x = lines[0];
   var y = lines[1];
   var text = `${x}\n${y}`;
   res.send(text);
+});
+
+router.get('/delete', (req, res, next) => {
+  fsExtra.emptyDirSync('html/index');
+  res.redirect('/default/control');  
+});
+
+router.post('/Fbx', (req, res, next) => {
+  var fbxUrl = require("../Fbx/DoughNut_FBX.fbx");
+  var fbxloader = new FBXLoader();
+  fbxloader.load(fbxUrl, function(object){
+    
+  });
 });
 
 
