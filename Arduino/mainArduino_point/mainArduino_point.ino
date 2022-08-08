@@ -1,5 +1,5 @@
 #include <SoftwareSerial.h>
-#include <AccelStepper.h>
+#include <Stepper.h>
 #include <TFMPlus.h>  // Include TFMini Plus Library v1.5.0
 TFMPlus tfmP;         // Create a TFMini Plus object
 #include <ArduinoJson.h>
@@ -19,8 +19,9 @@ TFMPlus tfmP;         // Create a TFMini Plus object
 #define sm2_pin3 8
 #define sm2_pin4 9
 
-#define aroundInterval 8660  // 한바퀴 도는 시간
-#define LIDARDATASIZE 72      // 한바퀴 동안 측정할 데이터 개수 현재 360 / 72 = 5도 마다 측정
+#define aroundInterval 4096  // 바퀴가 두 바퀴 도는 스텝
+#define turnInterval 4300 // 자체가 한바퀴 도는 스텝 (바퀴가 2바퀴 도는 스텝 + 오차 204)
+#define LIDARDATASIZE 10      // 4300 / 10 = 430개의 데이터 수집 (1회전 당)
 
 char ssid[] = "AndroidHotspot2409";            // your network SSID (name)
 char pass[] = "12345678";        // your network password
@@ -36,12 +37,10 @@ int server_port = 8000;           // nas port number
 // Initialize the Ethernet client object
 WiFiEspClient client;
 
-AccelStepper stepper1(4, sm1_pin1, sm1_pin3, sm1_pin2, sm1_pin4);
-AccelStepper stepper2(4, sm2_pin1, sm2_pin3, sm2_pin2, sm2_pin4);
+Stepper stepper1(aroundInterval / 2, sm1_pin4, sm1_pin2, sm1_pin3, sm1_pin1);
+Stepper stepper2(aroundInterval / 2, sm2_pin4, sm2_pin2, sm2_pin3, sm2_pin1);
 
 int16_t tfDist = 0;    // Distance to object in centimeters
-unsigned long currentMillis;
-unsigned long previousMillis;
 int start_count;
 
 void setup() {
@@ -121,9 +120,14 @@ void setup() {
 
 int cur_x = 0; int cur_y = 0;
 int nt_x = 0; int nt_y = 0;
-int cur_rot = 90;
+int finish = 0;
+int cur_rot = 0;
 
 void loop() {
+  if(finish) {
+     Serial.println("Finish!!!");
+     while(true){}
+  }
   String jsonstr = ""; // json string 선언  
   LidarDetectAround(jsonstr); // 반시계방향으로 360도 돌면서 거리 측정 및 좌표로 환산
   Serial.print("Make Json String :");
@@ -173,17 +177,26 @@ void getDataWeb(){
   client.stop(); // 클라이언트 접속 종료
   // close the connection:
   Serial.println("Client disconnected");
-  
-  //Serial.println(res_str);  // 응답 받은 데이터
-  // 데이터 중 x, y만 뽑아냄
-  int start_str = res_str.indexOf(F(" x = "));
-  int middle_str = res_str.indexOf(F(" y = "));
-  int end_str = res_str.indexOf(F(" </h1>"));
-  String sub_str1 = res_str.substring(start_str + 5, middle_str);
-  String sub_str2 = res_str.substring(middle_str + 5, end_str);
-  nt_x = sub_str1.toInt();
-  nt_y = sub_str2.toInt();
-  Serial.print("Next Location : ");
+
+  Serial.println("Response string : ");
+  Serial.println(res_str);  // 응답 받은 데이터
+  // 데이터 중 finish, x, y만 뽑아냄
+  int start_str = res_str.indexOf(F("finish = "));
+  int middle1_str = res_str.indexOf(F("x = "));
+  int middle2_str = res_str.indexOf(F("y = "));
+  int end_str = res_str.indexOf(F("</h1>"));
+  String sub_str1 = res_str.substring(start_str + 9, middle1_str - 1);
+  String sub_str2 = res_str.substring(middle1_str + 4, middle2_str - 1);
+  String sub_str3 = res_str.substring(middle2_str + 4, end_str - 2);
+  Serial.println("sub1 : |" + sub_str1 + "|");
+  Serial.println("sub2 : |" + sub_str2 + "|");
+  Serial.println("sub3 : |" + sub_str3 + "|");
+  finish = sub_str1.toInt();
+  nt_x = sub_str2.toInt();
+  nt_y = sub_str3.toInt();
+  Serial.print("Finish : ");
+  Serial.print(finish);
+  Serial.print(" Next Location : ");
   Serial.print(nt_x);
   Serial.print(" , ");
   Serial.println(nt_y);
@@ -227,87 +240,71 @@ int getDataLidar(){
 
 void LidarDetectAround(String& jsonstr){
   LedBlue();
-  unsigned long lidarInterval = aroundInterval / LIDARDATASIZE;
-  unsigned long lidarRunMillis = millis();
-  
-  DynamicJsonDocument doc(1024);
+  DynamicJsonDocument doc(4096);
   JsonObject root = doc.to<JsonObject>();
-  JsonArray Lidar_Location = root.createNestedArray("Lidar_Location");
-  JsonArray LidarData_x = root.createNestedArray("LidarData_x");
-  JsonArray LidarData_y = root.createNestedArray("LidarData_y");
+  JsonArray LidarData = root.createNestedArray("LidarData");
   
-  Lidar_Location[0] = cur_x;
-  Lidar_Location[1] = cur_y;
-  int dataCount = 0;
-  previousMillis = millis();
+  int Count = 0, dataCount = 0;
+  int lidarInterval = LIDARDATASIZE;
   while(true){
-    currentMillis = millis();
-    if(currentMillis - previousMillis >= aroundInterval) break;
-    if((currentMillis - lidarRunMillis)>= lidarInterval){
-      lidarRunMillis += lidarInterval;
-      if(dataCount > LIDARDATASIZE - 1){
-        Serial.println("ERROR: Lidar data Overflow!!!");
-        break;
-      }
+    if(Count >= turnInterval) break; // 오차 : 204 = 4300
+    if(Count % lidarInterval == 0){
       int currentDist = getDataLidar();
-      LidarData_x[dataCount] = cur_x + int(currentDist * (cos(radians(cur_rot + (360 * (currentMillis - previousMillis) / aroundInterval)))));
-      LidarData_y[dataCount] = cur_y + int(currentDist * (sin(radians(cur_rot + (360 * (currentMillis - previousMillis) / aroundInterval)))));
+      LidarData[dataCount] = currentDist;
       dataCount++;
     }
+    Count++;
     LeftRound();
   }
-  Stop();
+  Serial.print("Length : ");
+  Serial.println(dataCount);
   serializeJson(doc, jsonstr);
 }
 
 void goNextPoint(){
   LedPupple();
+  if(nt_x == cur_x && nt_y == cur_y) return;
   // 다음 측정 위치로 이동을 위한 방위각 설정
   nt_x -= cur_x;
   nt_y -= cur_y;
-
+  
   float degree = degrees(atan(float(nt_y) / nt_x));
-  unsigned long nt_rot;
-  if(degree < 90){
-    degree += 360;
-  }
-  nt_rot = int((degree - 90) / 360 * aroundInterval);
+  Serial.print("degree = ");
+  Serial.println(degree);
+  int nt_rot = int(degree * turnInterval / 360); 
   // 이동 방위각 회전
-  previousMillis = millis();
+  unsigned long Count = 0;
   while(true){
-    currentMillis = millis();
-    if(currentMillis - previousMillis >= nt_rot) break;
+    if(Count >= nt_rot) break;
+    Count++;
     LeftRound();
   }
-  Stop();
   
-  unsigned long nt_dist = sqrt(pow(nt_x, 2) + pow(nt_y, 2));
+  int nt_dist = sqrt(pow(nt_x, 2) + pow(nt_y, 2));
   Serial.print("next_dist = ");
   Serial.println(nt_dist);
   delay(500);
 
   // 이동
-  unsigned long lidarInterval = aroundInterval / LIDARDATASIZE;
-  previousMillis = millis();
-  unsigned long startMillis = previousMillis;
+  Count = 0;
+  unsigned long step_dist = nt_dist * int(aroundInterval / 42);
+  Serial.print("step nt_dist = ");
+  Serial.println(step_dist);
   while(true){
-    currentMillis = millis();
-    if(currentMillis - previousMillis >= nt_dist * 200){
-      previousMillis = currentMillis;
-      break;
-    }
+    // 거리(cm) * 두바퀴 당 스텝수(step/2rot) / 두바퀴 당 거리(cm/2rot) = 스탭수(step)
+    if(Count >= step_dist) break; 
+    Count++;
     Go();
   }
-  Stop();
 
   cur_x += nt_x;
-  cur_y += nt_x;
+  cur_y += nt_y;
 
   // 이동 후 방위각 90도로 다시 돌아옴
-  previousMillis = millis();
+  Count = 0;
   while(true){
-    currentMillis = millis();
-    if(currentMillis - previousMillis >= nt_rot) break;
+    if(Count >= nt_rot) break;
+    Count++;
     RightRound();
   }
 }
@@ -330,30 +327,25 @@ void printWifiStatus()
   Serial.println(" dBm");
 }
 
-void Stop(){
-  stepper1.setSpeed(0);
-  stepper2.setSpeed(0);
-}
-
 void Go(){
-  stepper1.setSpeed(1000);
-  stepper2.setSpeed(-1000);
-  stepper1.runSpeed();
-  stepper2.runSpeed();
+  stepper1.setSpeed(10);
+  stepper2.setSpeed(10);
+  stepper1.step(-1);
+  stepper2.step(1);
 }
 
 void RightRound(){
-  stepper1.setSpeed(1000);
-  stepper2.setSpeed(1000);
-  stepper1.runSpeed();
-  stepper2.runSpeed();
+  stepper1.setSpeed(10);
+  stepper2.setSpeed(10);
+  stepper1.step(-1);
+  stepper2.step(-1);
 }
 
 void LeftRound(){
-  stepper1.setSpeed(-1000);
-  stepper2.setSpeed(-1000);
-  stepper1.runSpeed();
-  stepper2.runSpeed();
+  stepper1.setSpeed(10);
+  stepper2.setSpeed(10);
+  stepper1.step(1);
+  stepper2.step(1);
 }
 
 void LedBlue(){

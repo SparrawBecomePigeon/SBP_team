@@ -1,4 +1,4 @@
-#include <AccelStepper.h>
+#include <Stepper.h>
 #include <SoftwareSerial.h>
 
 #define sm1_pin1 2
@@ -11,8 +11,8 @@
 #define sm2_pin3 8
 #define sm2_pin4 9
 
-AccelStepper stepper1(4, sm1_pin1, sm1_pin3, sm1_pin2, sm1_pin4);
-AccelStepper stepper2(4, sm2_pin1, sm2_pin3, sm2_pin2, sm2_pin4);
+Stepper stepper1(2048 , sm1_pin4, sm1_pin2, sm1_pin3, sm1_pin1);
+Stepper stepper2(2048, sm2_pin4, sm2_pin2, sm2_pin3, sm2_pin1);
 
 
 void setup() {
@@ -21,31 +21,26 @@ void setup() {
 
 void loop() {
   Go();
-  
-}
-
-void Stop(){
-  stepper1.setSpeed(0);
-  stepper2.setSpeed(0);
+  delay(2000);
 }
 
 void Go(){
-  stepper1.setSpeed(-1000);
-  stepper2.setSpeed(1000);
-  stepper1.runSpeed();
-  stepper2.runSpeed();
+  stepper1.setSpeed(10);
+  stepper2.setSpeed(10);
+  stepper1.step(-1);
+  stepper2.step(1);;
 }
 
 void RightRound(){
-  stepper1.setSpeed(500);
-  stepper2.setSpeed(500);
-  stepper1.runSpeed();
-  stepper2.runSpeed();
+  stepper1.setSpeed(10);
+  stepper2.setSpeed(10);
+  stepper1.step(-1);
+  stepper2.step(-1);;
 }
 
 void LeftRound(){
-  stepper1.setSpeed(-500);
-  stepper2.setSpeed(-500);
-  stepper1.runSpeed();
-  stepper2.runSpeed();
+  stepper1.setSpeed(10);
+  stepper2.setSpeed(10);
+  stepper1.step(1);
+  stepper2.step(1);;
 }
