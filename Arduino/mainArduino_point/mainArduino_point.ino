@@ -23,7 +23,7 @@ TFMPlus tfmP;         // Create a TFMini Plus object
 
 #define aroundInterval 4096  // 바퀴가 두 바퀴 도는 스텝
 #define turnInterval 4700 // 차체가 한바퀴 도는 스텝 
-#define LIDARDATASIZE 10      // 4800 / 10 = 480개의 데이터 수집 (1회전 당)
+#define LIDARDATASIZE 10      // 4700 / 70 = 470개의 데이터 수집 (1회전 당)
 
 char ssid[] = "DTNLAB";            // your network SSID (name)
 char pass[] = "pnudtn6519!";        // your network password
