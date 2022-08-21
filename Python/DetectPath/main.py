@@ -2,7 +2,8 @@ import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 import math
 import numpy as np
-
+import json
+from collections import OrderedDict
 
 def mk_arr(r, num):
     temp = []
@@ -24,7 +25,6 @@ Y1 = mk_arr(60, -60)
 Y1 = np.append(Y1, np.array(range(-60, 71)))
 t = []
 for i in range(45, 60):
-    print(i * (-4) / 3 + 150)
     t.append(i * (-4) / 3 + 150)
 Y1 = np.append(Y1, np.flip(np.array(t)))
 t = []
@@ -40,79 +40,73 @@ Y = Y1
 broken_point = [[45, 90], [30, 60], [-30, 60], [-45, 90]]
 broken_point = np.array(broken_point)
 
-for i, j in zip(X1, Y1):
-    print("(", i, ", ", j, ")")
 plt.scatter(X1, Y1)
 plt.scatter(machine[0], machine[1])
 plt.scatter(broken_point[:,0], broken_point[:,1])
 plt.show()
 
-
-
 ###########################################
 
 st_x = []
 st_y = []
-pre_dist = -1
 
-for i in range(len(X)):
-    cur_dist = 0
-    if i == len(X) - 1:
-        cur_dist = math.pow(X[0] - X[i], 2) + math.pow(Y[0] - Y[i], 2)
-    else:
-        cur_dist = math.pow(X[i + 1] - X[i], 2) + math.pow(Y[i + 1] - Y[i], 2)
-    if cur_dist == 0:
-        pre_dist = -1
-        continue
-    if pre_dist == -1:
-        pre_dist = cur_dist
-        continue
-    if cur_dist > pre_dist * 16 and (cur_dist > math.pow(10, 2) or pre_dist > math.pow(10, 2)):
-        j = i + 1
-        if i == len(X) - 1:
-            j = 0
-        machine_cur = math.pow(X[j] - machine[0], 2) + math.pow(Y[j] - machine[1], 2)
-        j = i - 1
-        if i == 0:
-            j = len(X) - 1
-        machine_pre = math.pow(X[j] - machine[0], 2) + math.pow(Y[j] - machine[1], 2)
-        if machine_pre > math.pow(20, 2) and machine_cur > math.pow(20, 2):
-            if machine_cur > machine_pre:
-                j = (i + round(len(X) / 12)) % len(X)
-                st_x.append(round((X[i] + X[j]) / 2))
-                st_y.append(round((Y[i] + Y[j]) / 2))
-                print("x , y : ")
-                print(X[i], Y[i])
-                print(X[j], Y[j])
-                print("append : ")
-                print(round((X[i] + X[j]) / 2), round((Y[i] + Y[j]) / 2))
-                i += round(len(X) / 12)
-            elif machine_pre > machine_cur:
-                i += 1
-                j = i - round(len(X) / 12)
-                if j < 0:
-                    j += len(X)
-                st_x.append(round((X[i] + X[j]) / 2))
-                st_y.append(round((Y[i] + Y[j]) / 2))
-                print("x , y : ")
-                print(X[i], Y[i])
-                print(X[j], Y[j])
-                print("append : ")
-                print(round((X[i] + X[j]) / 2), round((Y[i] + Y[j]) / 2))
-            pre_dist = -1
+for i in range(0, len(broken_point), 2):
+    x1 = broken_point[i][0]
+    y1 = broken_point[i][1]
+    x2 = broken_point[i + 1][0]
+    y2 = broken_point[i + 1][1]
+    gap = math.sqrt(math.pow(x2 - x1, 2) + math.pow(y2 - y1, 2))
+    rad = math.atan(20 / (gap / 2))
+    ap_x = (x2 - x1) / 2 - (y2 - y1) / 2 * (1 / math.cos(rad)) * math.sin(rad) + x1
+    ap_y = (x2 - x1) / 2 * (1 / math.cos(rad)) * math.sin(rad) + (y2 - y1) / 2 + y1
+
+    st_x.append(round(ap_x))
+    st_y.append(round(ap_y))
+
+    print("append ( x, y ) = ")
+    print(round(ap_x), round(ap_y))
+
+plt.scatter(X1, Y1)
+plt.scatter(machine[0], machine[1])
+plt.scatter(broken_point[:, 0], broken_point[:, 1])
+for i in range(len(st_x)):
+    plt.scatter(st_x[i], st_y[i])
+plt.show()
+
+for i in range(len(st_x)):
+    j = 0
+    while True:
+        if j == len(X1):
+            break;
+        if abs(st_x[i] - X1[j]) > 15:
+            j += 1
             continue
-    pre_dist = cur_dist
-
-print("st : ")
-
-if len(st_x) == 0 or len(st_y) == 0:
-    print("st is empty")
-else:
-    plt.scatter(X, Y, s=5)
-    plt.scatter(machine[0], machine[1])
-    for i in range(len(st_x)):
-        if st_x[i] == 0 and st_y[i] == 0:
+        if abs(st_y[i] - Y1[j]) > 15:
+            j += 1
             continue
-        print(st_x[i], st_y[i])
-        plt.scatter(st_x[i], st_y[i])
-    plt.show()
+        if math.pow(st_x[i] - X1[j], 2) + math.pow(st_y[i] - Y1[j], 2) > math.pow(15, 2):
+            j += 1
+            continue
+        print("shorter than 15cm : i, j, ( x, y ) = ")
+        print(i, j, st_x[i], st_y[i])
+        st_x[i] += round((machine[0] - st_x[i]) * 0.1)
+        st_y[i] += round((machine[1] - st_y[i]) * 0.1)
+        j = 0
+
+
+plt.scatter(X1, Y1)
+plt.scatter(machine[0], machine[1])
+plt.scatter(broken_point[:,0], broken_point[:,1])
+for i in range(len(st_x)):
+    plt.scatter(st_x[i], st_y[i])
+plt.show()
+
+file_data = OrderedDict()
+
+file_data["st_x"] = st_x
+file_data["st_y"] = st_y
+
+with open('./words.json', 'w', encoding="utf-8") as make_file:
+    json.dump(file_data, make_file, ensure_ascii=False, indent="\t")
+
+print(" st_x, st_y : ", st_x, st_y)
