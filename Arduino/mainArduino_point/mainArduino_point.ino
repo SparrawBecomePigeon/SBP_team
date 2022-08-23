@@ -282,7 +282,7 @@ void goNextPoint(){
   nt_x -= cur_x;
   nt_y -= cur_y;
   
-  float degree = degrees(atan(float(nt_y) / nt_x));
+  float degree = degrees(atan2(nt_y , nt_x));
   if(degree < 0) degree += 360;
   Serial.print("degree = ");
   Serial.println(degree);

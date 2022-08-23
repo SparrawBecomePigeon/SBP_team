@@ -1,5 +1,5 @@
-import matplotlib.pyplot as plt
-from matplotlib.animation import FuncAnimation
+#import matplotlib.pyplot as plt
+#from matplotlib.animation import FuncAnimation
 from scipy.optimize import curve_fit
 import numpy as np
 import json
@@ -217,7 +217,8 @@ def get_result():
 # file_path = "lidardata.json"
 # file_path = "rec_with_box.json"
 # file_path = "2.json"
-file_path = "./words.json"
+#file_path = "words.json" # pyhon3 실행경로
+file_path = "./html/words.json"
 
 point = []
 th = []
@@ -233,15 +234,17 @@ new_x_arr = []
 new_y_arr = []
 size = 10
 pause = False
+
 with open(file_path, 'r') as file:
     data = json.load(file)
     X = data["Lidar_x"]
     Y = data["Lidar_y"]
     machine = data["Location"]
-    X[0] = X[2]
-    X[1] = X[2]
-    Y[0] = Y[2]
-    Y[1] = Y[2]
+
+X[0] = X[2]
+X[1] = X[2]
+Y[0] = Y[2]
+Y[1] = Y[2]
 
 remove_trash()
 get_points()
@@ -252,8 +255,8 @@ get_curve_point()
 st_x = []
 st_y = []
 
-print("broken points [0] : ")
-print(broken_xy[0][0], broken_xy[0][1])
+#print("broken points [0] : ")
+#print(broken_xy[0][0], broken_xy[0][1])
 
 for i in range(0, len(broken_xy), 2):
     x1 = broken_xy[i][0]
@@ -298,19 +301,22 @@ for i in range(len(st_x)):
         st_y[i] += round((machine[1] - st_y[i]) * 0.1)
         j = 0
 
-plt.scatter(X, Y, c='blue', s=5)
-plt.scatter(machine[0], machine[1], c='yellow', s=20)
-plt.scatter([i[0] for i in broken_xy], [i[1] for i in broken_xy], c='red', s=20)
-for i in range(len(st_x)):
-    plt.scatter(st_x[i], st_y[i], c='orange', s=20)
-plt.show()
+#plt.scatter(X, Y, c='blue', s=5)
+#plt.scatter(machine[0], machine[1], c='yellow', s=20)
+#plt.scatter([i[0] for i in broken_xy], [i[1] for i in broken_xy], c='red', s=20)
+#for i in range(len(st_x)):
+#    plt.scatter(st_x[i], st_y[i], c='orange', s=20)
+#plt.show()
 
 file_data = OrderedDict()
 
+if len(st_x) == 0 or len(st_y) == 0:
+    st_x.append(-1)
+    st_y.append(-1)
 file_data["st_x"] = st_x[0]
 file_data["st_y"] = st_y[0]
 
-with open('./words.json', 'w', encoding="utf-8") as make_file:
+with open(file_path, 'w', encoding="utf-8") as make_file:
     json.dump(file_data, make_file, ensure_ascii=False, indent="\t")
 
-print(" st_x, st_y : ", st_x[0], st_y[0])
+print("st_x, st_y : ", st_x[0], st_y[0])
