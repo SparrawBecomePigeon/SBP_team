@@ -4,6 +4,11 @@
 TFMPlus tfmP;         // Create a TFMini Plus object
 #include <ArduinoJson.h>
 #include "WiFiEsp.h"
+#include <Wire.h>
+
+#define DEVIATION_X -100
+#define DEVIATION_Y 150
+#define Addr 0x1E               // 7-bit address of HMC5883 compass
 
 #define BLUE_PIN 22
 #define GREEN_PIN 24
@@ -44,6 +49,10 @@ Stepper stepper2(aroundInterval / 2, sm2_pin4, sm2_pin2, sm2_pin3, sm2_pin1);
 
 int16_t tfDist = 0;    // Distance to object in centimeters
 int start_count;
+int cur_x = 0; int cur_y = 0;
+int nt_x = 0; int nt_y = 0;
+int finish = 0;
+int cur_rot = 0;
 
 void setup() {
   Serial.begin(9600);
@@ -52,6 +61,13 @@ void setup() {
   delay(20);               // Give port time to initalize
   tfmP.begin(&Serial2);   // Initialize device library object and...
   // pass device serial port to the object.
+  Wire.begin();
+
+  // Set operating mode to continuous
+  Wire.beginTransmission(Addr); 
+  Wire.write(byte(0x02));
+  Wire.write(byte(0x00));
+  Wire.endTransmission();
 
   pinMode(BLUE_PIN, OUTPUT);
   pinMode(GREEN_PIN, OUTPUT);
@@ -130,26 +146,54 @@ void setup() {
       break;
     }
   }
+  // 이동
+  int Count = 0;
+  unsigned long step_dist = 20 * int(aroundInterval / 44);
+  Serial.print("step nt_dist = ");
+  Serial.println(step_dist);
+  while(true){
+    // 거리(cm) * 두바퀴 당 스텝수(step/2rot) / 두바퀴 당 거리(cm/2rot) = 스탭수(step)
+    if(Count >= step_dist) break; 
+    Count++;
+    Go();
+  }
+  delay(1000);
+  cur_rot = compass();
+  cur_rot = compass();
 }
 
-int cur_x = 0; int cur_y = 0;
-int nt_x = 0; int nt_y = 0;
-int finish = 0;
-int cur_rot = 0;
-
 void loop() {
-  if(finish) {
+  if(finish == 1) {
      Serial.println("Finish!!!");
      while(true){}
   }
   String jsonstr = ""; // json string 선언  
-  LidarDetectAround(jsonstr); // 반시계방향으로 360도 돌면서 거리 측정 및 좌표로 환산
+  while(true){
+    LidarDetectAround(jsonstr); // 반시계방향으로 360도 돌면서 거리 측정 및 좌표로 환산
+    delay(1000);
+    int nt_rot = compass();
+    if(abs(nt_rot - cur_rot) <= 3) break;
+    delay(1000);
+    compassCenter();
+    jsonstr = "";
+  }
   Serial.print("Make Json String :");
   Serial.println(jsonstr);
   SendDataWeb(jsonstr); // 측정된 좌표 웹에 전송
   getDataWeb(); // 다음 위치 받음
+  while(true){
+    if(finish != -1) break;
+    compassCenter();
+    goNextPoint();
+    delay(1000);
+    compassCenter();
+    SendDataWeb("{\"LidarData\": [-2]}");
+    getDataWeb(); // 다음 위치 받음
+  }
+  compassCenter();
   goNextPoint();
-  
+  delay(500);
+  compassCenter();
   delay(2000);
 }
 
@@ -173,6 +217,8 @@ void getDataWeb(){
       Serial.println("Connection failed");
       LedRed();
       delay(500);
+      getDataWeb();
+      return;
     }
   }
   // if there are incoming bytes available
@@ -237,6 +283,8 @@ void SendDataWeb(const String& jsonstr){
     LedRed();
     Serial.println("Connection failed");
     delay(500);
+    SendDataWeb(jsonstr);
+    return;
   }
   client.flush();
   client.stop(); // 클라이언트 접속 종료
@@ -324,6 +372,65 @@ void goNextPoint(){
     Count++;
     RightRound();
   }
+}
+
+void compassCompact(){
+  int detect_rot = compass();
+  if(cur_rot > detect_rot + 1){
+    RightRound();
+    compassCompact();
+    return;
+  }
+  else if(cur_rot < detect_rot - 1){
+    LeftRound();
+    compassCompact();
+    return;
+  }
+  return;
+}
+
+void compassCenter()
+{
+  int detect_rot = compass();
+  if(cur_rot > detect_rot + 3){
+    compassCompact();
+  }
+  else if(cur_rot < detect_rot - 3){
+    compassCompact();
+  }
+  return;
+}
+
+
+int compass()
+{
+  float sum_angle = 0;
+  for(int i=0; i<5; i++){
+    int x, y, z;
+    // Initiate communications with compass
+    Wire.beginTransmission(Addr);
+    Wire.write(byte(0x03));       // Send request to X MSB register
+    Wire.endTransmission();
+  
+    Wire.requestFrom(Addr, 6);    // Request 6 bytes; 2 bytes per axis
+    if(Wire.available() <=6) {    // If 6 bytes available
+      x = Wire.read() << 8 | Wire.read();
+      z = Wire.read() << 8 | Wire.read();
+      y = Wire.read() << 8 | Wire.read();
+    }
+  
+    x += DEVIATION_X;
+    y += DEVIATION_Y;
+  
+    // 방위각 계산 및 출력
+    float angle = -atan2(x, y) * 180 / 3.14159;
+    sum_angle += angle;
+  }
+  sum_angle = sum_angle / 5;
+  // Print raw values
+  Serial.print("A = ");
+  Serial.println(round(sum_angle));
+  return round(sum_angle);
 }
 
 void printWifiStatus()
